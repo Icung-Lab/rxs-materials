@@ -78,21 +78,23 @@ class MainViewController: UIViewController {
     }
     
     PhotoWriter.save(image)
-      .asSingle()
-      .subscribe(onSuccess: { [weak self] id in
-        guard let self = self else {
-          return
+      .subscribe(
+        onSuccess: { [weak self] id in
+          guard let self = self else {
+            return
+          }
+          
+          self.showMessage("Saved with id: \(id)")
+          self.actionClear()
+        },
+        onError: { [weak self] error in
+          guard let self = self else {
+            return
+          }
+          
+          self.showMessage("Error", description: error.localizedDescription)
         }
-        
-        self.showMessage("Saved with id: \(id)")
-        self.actionClear()
-      },onError: { [weak self] error in
-        guard let self = self else {
-          return
-        }
-        
-        self.showMessage("Error", description: error.localizedDescription)
-      })
+      )
       .disposed(by: bag)
   }
 

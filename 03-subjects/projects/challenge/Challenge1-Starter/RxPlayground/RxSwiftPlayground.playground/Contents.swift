@@ -21,11 +21,25 @@ example(of: "PublishSubject") {
     }
     
     // Add code to update dealtHand here
-    
+      let handPoints = points(for: hand)
+      if handPoints > 21 {
+          dealtHand.onError(HandError.busted(points: handPoints))
+      } else {
+          dealtHand.onNext(hand)
+      }
   }
   
   // Add subscription to dealtHand here
-  
+    dealtHand
+        .subscribe(
+            onNext: {
+                print(cardString(for: $0), "for", points(for: $0), "points")
+            },
+            onError: {
+                print(String(describing: $0).capitalized)
+            }
+        )
+        .disposed(by: disposeBag)
   
   deal(3)
 }

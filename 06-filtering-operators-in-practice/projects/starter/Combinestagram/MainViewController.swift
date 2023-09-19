@@ -50,16 +50,17 @@ class MainViewController: UIViewController {
 
     images
       .throttle(.microseconds(500), scheduler: MainScheduler.instance)
-      .subscribe(onNext: { [weak imagePreview] photos in
-        guard let preview = imagePreview else { return }
-
-        preview.image = photos.collage(size: preview.frame.size)
-      })
-      .disposed(by: bag)
-
-    images
       .subscribe(onNext: { [weak self] photos in
-        self?.updateUI(photos: photos)
+        guard
+          let self = self,
+          let preview = imagePreview
+        else {
+          return
+        }
+        
+        self.updateUI(photos: photos)
+        preview.image = photos.collage(size: preview.frame.size)
+        self.updateNavigationIcon()
       })
       .disposed(by: bag)
   }

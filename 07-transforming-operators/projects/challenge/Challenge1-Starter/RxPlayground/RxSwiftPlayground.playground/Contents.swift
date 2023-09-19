@@ -58,7 +58,20 @@ example(of: "Challenge 1") {
   let input = PublishSubject<String>()
   
   // Add your code here
-  
+    input
+        .map(convert)
+        .unwrap()
+        .skipWhile {
+            $0 == 0
+        }
+        .take(10)
+        .toArray()
+        .map(format)
+        .map(dial)
+        .subscribe(onSuccess: {
+            print($0)
+        })
+        .disposed(by: disposeBag)
   
   input.onNext("")
   input.onNext("0")

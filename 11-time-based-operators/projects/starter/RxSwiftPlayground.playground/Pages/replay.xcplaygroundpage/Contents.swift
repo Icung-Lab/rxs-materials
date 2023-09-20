@@ -4,7 +4,37 @@ import RxCocoa
 
 
 // Start coding here
+let elementsPerSecond = 1
+let maxElements = 58
+let replayedElements = 1
+let replayDelay: TimeInterval = 3
 
+let sourceObservable = Observable<Int>
+    .interval(.microseconds(Int(1000.0 / Double(elementsPerSecond))), scheduler: MainScheduler.instance)
+    .replayAll()
+
+let sourceTimeline = TimelineView<Int>.make()
+let replayedTimeline = TimelineView<Int>.make()
+
+let stack = UIStackView.makeVertical([
+    UILabel.makeTitle("replay"),
+    UILabel.make("Emit \(elementsPerSecond) per second:"),
+    sourceTimeline,
+    UILabel.make("replay \(replayedElements) after \(replayDelay) sec:"),
+    replayedTimeline
+])
+
+_ = sourceObservable.subscribe(sourceTimeline)
+
+DispatchQueue.main.asyncAfter(deadline: .now() + replayDelay) {
+    _ = sourceObservable.subscribe(replayedTimeline)
+}
+
+_ = sourceObservable.connect()
+
+let hostView = setupHostView()
+hostView.addSubview(stack)
+hostView
 
 // Support code -- DO NOT REMOVE
 class TimelineView<E>: TimelineViewBase, ObserverType where E: CustomStringConvertible {

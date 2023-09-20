@@ -27,6 +27,12 @@ _ = sourceObservable.subscribe(sourceTimeline)
 
 
 // Setup the delayed subscription
+_ = Observable<Int>
+    .timer(.seconds(3), scheduler: MainScheduler.instance)
+    .flatMap { _ in
+        sourceObservable.delay(delay, scheduler: MainScheduler.instance)
+    }
+    .subscribe(delayedTimeline)
 
 // Start coding here
 

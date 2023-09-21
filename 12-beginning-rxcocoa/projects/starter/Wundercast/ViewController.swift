@@ -40,13 +40,61 @@ class ViewController: UIViewController {
   @IBOutlet private var humidityLabel: UILabel!
   @IBOutlet private var iconLabel: UILabel!
   @IBOutlet private var cityNameLabel: UILabel!
-
-  override func viewDidLoad() {
-    super.viewDidLoad()
-    // Do any additional setup after loading the view, typically from a nib.
-
-    style()
-  }
+    @IBOutlet weak var tempSwitch: UISwitch!
+    
+    private let bag = DisposeBag()
+    private let geoCode = PublishSubject<ApiController.GeoCode>()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Do any additional setup after loading the view, typically from a nib.
+        
+        style()
+        
+        let temperatur = tempSwitch.rx
+            .controlEvent(.valueChanged).asObservable()
+        
+        geoCode
+            .subscribe(onNext: { [weak self] code in
+                guard let self = self else {
+                    return
+                }
+                
+                self.getCurrentWeather(lat: String(code.lat), lon: String(code.lon))
+            })
+            .disposed(by: bag)
+        
+        searchCityName.rx
+            .controlEvent(.editingDidEndOnExit)
+            .map { [weak self] in
+                guard let self = self else {
+                    return ""
+                }
+                
+                return self.searchCityName.text ?? ""
+            }
+            .filter {
+                !$0.isEmpty
+            }
+            .flatMap { text in
+                ApiController.shared
+                    .getGeoCode(for: text)
+            }
+            .share(replay: 1)
+            .observeOn(MainScheduler.instance)
+            .subscribe(onNext: { [weak self] data in
+                guard let self = self else {
+                    return
+                }
+                
+                if let data = data {
+                    self.geoCode.onNext(data)
+                } else {
+                    self.geoCode.onNext(.empty)
+                }
+            })
+            .disposed(by: bag)
+    }
 
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
@@ -79,4 +127,29 @@ class ViewController: UIViewController {
     iconLabel.textColor = UIColor.cream
     cityNameLabel.textColor = UIColor.cream
   }
+    
+    private func getCurrentWeather(lat: String, lon: String) {
+        let weather = ApiController.shared.currentWeather(lat: lat, lon: lon)
+            .asDriver(onErrorJustReturn: .empty)
+        
+        weather.map { [weak self] w in
+            guard let self = self else {
+                return ""
+            }
+            
+            if self.tempSwitch.isOn {
+                return "\(Int(Double(w.temperature) * 1.8 + 32))° F"
+            } else {
+                return "\(w.temperature)° C"
+            }
+        }
+        .drive(tempLabel.rx.text)
+        .disposed(by: bag)
+        
+        weather.map { "\($0.humidity)%" }
+            .drive(humidityLabel.rx.text)
+            .disposed(by: bag)
+        
+        cityNameLabel.text = searchCityName.text
+    }
 }

@@ -35,6 +35,16 @@ import RxSwift
 import RxCocoa
 
 class ApiController {
+    struct GeoCode: Codable {
+        let lat, lon: Double
+        
+        static let empty = GeoCode(
+          lat: 40.7127281, lon: -74.0060152
+        )
+    }
+
+    typealias GeoCodes = [GeoCode]
+    
   struct Weather: Decodable {
     let cityName: String
     let temperature: Int
@@ -93,10 +103,10 @@ class ApiController {
 
   /// The api key to communicate with openweathermap.org
   /// Create you own on https://home.openweathermap.org/users/sign_up
-  private let apiKey = "<#Your Key#>"
+  private let apiKey = "97b11a0cd3692a724b6398e568d635be"
 
   /// API base URL
-  let baseURL = URL(string: "http://api.openweathermap.org/data/2.5")!
+  let baseURL = URL(string: "http://api.openweathermap.org/")!
 
   init() {
     Logging.URLRequests = { request in
@@ -105,12 +115,23 @@ class ApiController {
   }
 
   // MARK: - Api Calls
-  func currentWeather(for city: String) -> Observable<Weather> {
-    buildRequest(pathComponent: "weather", params: [("q", city)])
-      .map { data in
-        try JSONDecoder().decode(Weather.self, from: data)
-      }
+    func currentWeather(lat: String, lon: String) -> Observable<Weather> {
+      buildRequest(pathComponent: "data/2.5/weather", params: [("lat", lat), ("lon", lon)])
+            .map { data in
+              try JSONDecoder().decode(Weather.self, from: data)
+          }
+          
   }
+
+    func getGeoCode(for city: String) -> Observable<GeoCode?> {
+        buildRequest(pathComponent: "geo/1.0/direct", params: [("q", city)])
+          .map { data in
+            try JSONDecoder().decode(GeoCodes.self, from: data)
+          }
+          .map {
+              $0.first
+          }
+    }
 
   // MARK: - Private Methods
 

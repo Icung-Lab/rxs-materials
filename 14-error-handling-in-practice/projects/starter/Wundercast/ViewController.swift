@@ -100,10 +100,21 @@ class ViewController: UIViewController {
                               !$0.isEmpty
                           }
                           .map { _ in 1 }
+                  } else if (error as NSError).code == -1009 {
+                      return RxReachability.shared.status
+                          .filter {
+                              $0 == .online
+                          }
+                          .map { _ in 1 }
                   }
                   
                   print("== retrying after \(attempt + 1) seconds ==")
-                  return Observable<Int>.timer(.seconds(attempt + 1), scheduler: MainScheduler.instance).take(1)
+                  return Observable<Int>
+                      .timer(
+                        .seconds(attempt + 1),
+                        scheduler: MainScheduler.instance
+                      )
+                      .take(1)
               }
           }
           

@@ -52,6 +52,7 @@ class ApiController {
     
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-    return Observable.just([])
+    return URLSession.shared.rx.decodable(request: request, type: GiphySearchResponse.self)
+          .map(\.data)
   }
 }
